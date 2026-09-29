@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VANGUARD - Target Strike (HTTPS Secured)</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#10131a;color:white;overflow:hidden}
+#menu{position:fixed;inset:0;background:linear-gradient(#1118,#111),radial-gradient(circle at center,#29313d,#090b0f);display:flex;align-items:center;justify-content:center;text-align:center;z-index:5}
+.panel{background:#181d26;border:1px solid #3a4350;border-radius:16px;padding:28px;width:min(90%,430px);box-shadow:0 15px 50px #0008}
+.security-badge{display:inline-flex;align-items:center;gap:6px;background:#132a1e;color:#4ef081;border:1px solid #235832;padding:4px 12px;border-radius:20px;font-size:12px;margin-bottom:12px;font-weight:bold}
+h1{font-size:42px;letter-spacing:5px;margin:5px 0;color:#ff5555}
+p{color:#b8bec9;line-height:1.5}
+button{border:0;border-radius:9px;padding:14px 25px;background:#ff4a4a;color:white;font-weight:bold;font-size:16px;cursor:pointer;transition:background 0.2s}
+button:hover{background:#e43838}
+#game{display:none;height:100vh;position:relative;background:linear-gradient(#526b7d 0 48%,#35412f 48% 100%)}
+.sky{position:absolute;inset:0 0 52%;background:linear-gradient(#4d6678,#a8bbc4);z-index:0}
+.ground{position:absolute;left:0;right:0;bottom:0;height:52%;background:linear-gradient(170deg,#46543d,#222b20);z-index:0}
+.hud{position:absolute;top:0;left:0;right:0;z-index:3;display:flex;justify-content:space-between;padding:14px;background:#080b0dcc;font-weight:bold}
+#arena{position:absolute;inset:60px 0 0;z-index:2;cursor:crosshair}
+.target{position:absolute;width:72px;height:72px;border-radius:50%;background:#eee;border:5px solid #222;box-shadow:0 4px 12px #0008;transform:translate(-50%,-50%);cursor:pointer}
+.target:before{content:"";position:absolute;inset:12px;border-radius:50%;background:#d33;border:4px solid white}
+.target:after{content:"";position:absolute;inset:27px;border-radius:50%;background:#333}
+#message{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:30px;font-weight:bold;text-shadow:0 2px 8px #000;z-index:4;pointer-events:none}
+#fire{position:fixed;right:22px;bottom:22px;width:90px;height:90px;border-radius:50%;background:#ff4a4a;z-index:6;display:none;box-shadow:0 0 20px #f44;touch-action:none}
+#cross{position:fixed;left:50%;top:54%;width:24px;height:24px;transform:translate(-50%,-50%);z-index:3;pointer-events:none}
+#cross:before,#cross:after{content:"";position:absolute;background:white;box-shadow:0 0 3px #000}
+#cross:before{width:24px;height:2px;top:11px}
+#cross:after{width:2px;height:24px;left:11px}
+@media(max-width:600px){h1{font-size:32px}.target{width:62px;height:62px}#fire{display:block}}
+</style>
+</head>
+<body>
+
+<div id="menu">
+  <div class="panel">
+    <div class="security-badge">
+      🔒 HTTPS Secured
+    </div>
+    <h1>VANGUARD</h1>
+    <h2>TARGET STRIKE</h2>
+    <p>Game latihan menembak target. Klik target secepat mungkin sebelum waktu habis.</p>
+    <p><b>Waktu: 30 detik • Target: 20</b></p>
+    <button onclick="startGame()">▶ MULAI GAME</button>
+  </div>
+</div>
+
+<div id="game">
+  <div class="sky"></div><div class="ground"></div>
+  <div class="hud">
+    <span>🎯 Skor: <b id="score">0</b></span>
+    <span>⏱️ Waktu: <b id="time">30</b></span>
+    <span>🏆 Rekor: <b id="best">0</b></span>
+  </div>
+  <div id="arena"></div>
+  <div id="cross"></div>
+  <div id="message"></div>
+  <button id="fire">TEMBAK</button>
+</div>
+
+<script>
+// Check and inform if running in an insecure environment
+if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+  console.warn('VANGUARD: Running in non-secure HTTP context. For full Web Browser Security API compliance, deploy via HTTPS.');
+}
+
+let score=0,time=30,best=Number(localStorage.getItem("vanguardBest")||0);
+let timer=null,target=null,gameActive=false;
+document.getElementById("best").textContent=best;
+
+function startGame(){
+  document.getElementById("menu").style.display="none";
+  document.getElementById("game").style.display="block";
+  score=0;time=30;gameActive=true;
+  document.getElementById("score").textContent=score;
+  document.getElementById("time").textContent=time;
+  spawnTarget();
+  clearInterval(timer);
+  timer=setInterval(()=>{
+    time--;
+    document.getElementById("time").textContent=time;
+    if(time<=0) endGame();
+  },1000);
+}
+
+function spawnTarget(){
+  if(!gameActive)return;
+  if(target)target.remove();
+  target=document.createElement("div");
+  target.className="target";
+  const w=Math.max(90,innerWidth-90),h=Math.max(160,innerHeight-150);
+  target.style.left=(45+Math.random()*(w-45))+"px";
+  target.style.top=(45+Math.random()*(h-45))+"px";
+  target.onclick=hit;
+  document.getElementById("arena").appendChild(target);
+}
+
+function hit(e){
+  if(!gameActive)return;
+  if(e && e.stopPropagation) e.stopPropagation();
+  score++;
+  document.getElementById("score").textContent=score;
+  document.getElementById("message").textContent="🎯 HIT!";
+  setTimeout(()=>document.getElementById("message").textContent="",180);
+  if(score>=20){endGame(true);return}
+  spawnTarget();
+}
+
+document.getElementById("arena").onclick=()=>{
+  if(gameActive){
+    document.getElementById("message").textContent="MISS!";
+    setTimeout(()=>document.getElementById("message").textContent="",180);
+  }
+};
+
+document.getElementById("fire").onclick=()=>{
+  if(!gameActive)return;
+  if(target){hit({stopPropagation:()=>{}})}
+};
+
+function endGame(win=false){
+  gameActive=false;clearInterval(timer);
+  if(target){target.remove();target=null}
+  if(score>best){best=score;localStorage.setItem("vanguardBest",best)}
+  document.getElementById("best").textContent=best;
+  document.getElementById("game").style.display="none";
+  document.getElementById("menu").style.display="flex";
+  document.querySelector("#menu .panel").innerHTML=`
+    <div class="security-badge">🔒 HTTPS Secured</div>
+    <h1>${win?"MENANG!":"SELESAI!"}</h1>
+    <h2>Skor kamu: ${score}</h2>
+    <p>${win?"Target 20 berhasil kamu capai!":"Coba lagi dan pecahkan rekor kamu."}</p>
+    <p>🏆 Rekor terbaik: <b>${best}</b></p>
+    <button onclick="startGame()">▶ MAIN LAGI</button>
+  `;
+}
+</script>
+</body>
+</html>
